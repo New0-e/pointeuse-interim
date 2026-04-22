@@ -867,7 +867,7 @@ async function writeDataToSheets(sheetId, data) {
   await apiReq('POST',
     `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`,
     {
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: 'RAW',
       data: [
         { range: 'Heures!A1',     values: [heuresH,   ...heuresRows]   },
         { range: 'Missions!A1',   values: [missionsH, ...missionsRows] },
@@ -891,9 +891,9 @@ async function readDataFromSheets(sheetId) {
       const e = {};
       heuresH.forEach((h, i) => { e[h] = row[i] ?? ''; });
       e.pause_minutes    = parseInt(e.pause_minutes, 10)  || 0;
-      e.pause_payee      = e.pause_payee      === 'true';
+      e.pause_payee      = String(e.pause_payee).toLowerCase()     === 'true';
       e.taux_horaire     = parseFloat(e.taux_horaire)     || 0;
-      e.indemnite_repas  = e.indemnite_repas  === 'true';
+      e.indemnite_repas  = String(e.indemnite_repas).toLowerCase() === 'true';
       e.km               = parseFloat(e.km)               || 0;
       e.heures_directes  = e.heures_directes !== '' ? (parseFloat(e.heures_directes) || null) : null;
       return e;
