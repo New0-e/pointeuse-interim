@@ -1330,11 +1330,18 @@ function renderEntriesList(entries) {
     const h = calcHeures(e);
     const m = getMission(e.mission_id);
     const col = m?.couleur || 'var(--primary-light)';
+    const horaires = e.heure_arrivee && e.heure_depart
+      ? `${e.heure_arrivee} – ${e.heure_depart}`
+      : e.heures_directes != null
+        ? `${e.heures_directes}h saisie directe`
+        : '';
+    const barH = Math.max(e.heure_arrivee && e.heure_depart ? 52 : 38, m ? 52 : 38);
     return `
       <div class="entry-item">
-        ${m ? `<div style="width:4px;height:38px;border-radius:2px;background:${col};flex-shrink:0"></div>` : ''}
+        ${m ? `<div style="width:4px;height:${barH}px;border-radius:2px;background:${col};flex-shrink:0"></div>` : ''}
         <div class="entry-info">
           <div class="entry-date">${fmtDate(e.date)}</div>
+          ${horaires ? `<div style="font-size:0.8rem;color:var(--muted);margin-top:1px">${horaires}</div>` : ''}
           <div class="entry-hours">${fmtH(h)}
             ${e.type_jour && e.type_jour !== 'normal' ? `<span class="badge badge-warning" style="font-size:0.65rem;margin-left:4px">${e.type_jour}</span>` : ''}
           </div>
