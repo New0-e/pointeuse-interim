@@ -964,14 +964,16 @@ async function loadData() {
 
   } catch (err) {
     console.error('loadData error', err);
+    const msg = err.message || String(err);
     const local = loadLocal();
     if (local) {
       S.data = migrateData(local);
-      setSyncStatus('offline', '⚠ Hors ligne');
+      setSyncStatus('offline', '⚠ Hors ligne — ' + msg.slice(0, 60));
     } else {
       S.data = defaultData();
-      setSyncStatus('error', '⚠ Erreur');
+      setSyncStatus('error', '⚠ ' + msg.slice(0, 60));
     }
+    alert('Erreur Drive/Sheets :\n' + msg + '\n\nVérifiez que les APIs Google Drive et Google Sheets sont activées dans votre Console, et reconnectez-vous.');
   }
   renderAll();
 }
@@ -1007,7 +1009,9 @@ async function saveToDrive() {
     setSyncStatus('synced', '✓ Synchronisé');
   } catch (err) {
     console.error('saveToDrive error', err);
-    setSyncStatus('error', '⚠ Erreur sync');
+    const msg = err.message || String(err);
+    setSyncStatus('error', '⚠ ' + msg.slice(0, 60));
+    alert('Erreur de sauvegarde :\n' + msg);
   }
 }
 
