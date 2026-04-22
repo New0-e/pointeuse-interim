@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pointeuse Intérim</title>
+<style>
+/* =============================================
+   VARIABLES & RESET
+   ============================================= */
+:root {
+  --primary:       #7C3AED;
+  --primary-dark:  #5B21B6;
+  --primary-light: #A78BFA;
+  --bg:            #0F0F1A;
+  --surface:       #1A1A2E;
+  --surface2:      #252540;
+  --border:        #2D2D4E;
+  --text:          #E8E8F0;
+  --muted:         #8888AA;
+  --success:       #10B981;
+  --warning:       #F59E0B;
+  --error:         #EF4444;
+  --radius:        12px;
+  --radius-sm:     8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+#app {
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+@media (min-width: 521px) {
+  #app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+}
+
+/* =============================================
+   HEADER
+   ============================================= */
+#header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  min-height: 57px;
+}
+.logo { font-size: 1.05rem; font-weight: 700; color: var(--primary-light); letter-spacing: -0.02em; }
+.header-right { display: flex; align-items: center; gap: 6px; }
+
+.sync-badge {
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--surface2);
+  transition: color 0.2s;
+}
+.sync-badge.synced  { color: var(--success); }
+.sync-badge.syncing { color: var(--warning); }
+.sync-badge.error   { color: var(--error); }
+.sync-badge.offline { color: var(--muted); }
+
+.icon-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+  line-height: 1;
+}
+.icon-btn:hover { background: var(--border); }
+
+/* =============================================
+   SCREENS & TABS
+   ============================================= */
+.screen { flex: 1; overflow-y: auto; }
+.hidden { display: none !important; }
+
+#tab-nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky;
+  top: 57px;
+  z-index: 99;
+}
+#tab-nav::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  flex: 1;
+  min-width: 65px;
+  padding: 11px 6px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn.active { color: var(--primary-light); border-bottom-color: var(--primary-light); }
+.tab-pane { padding: 14px 14px 90px; }
+
+/* =============================================
+   CARDS
+   ============================================= */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* =============================================
+   FORMS
+   ============================================= */
+.form-group { margin-bottom: 13px; }
+.form-label {
+  display: block;
+  font-size: 0.83rem;
+  color: var(--muted);
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+.form-control {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  transition: border-color 0.15s;
+  appearance: none;
+}
+.form-control:focus { outline: none; border-color: var(--primary-light); }
+textarea.form-control { resize: vertical; min-height: 60px; }
+select.form-control {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238888AA' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
+}
+.form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.checkbox-group { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+.checkbox-group input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+
+/* =============================================
+   BUTTONS
+   ============================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  width: 100%;
+  text-align: center;
+}
+.btn:active  { transform: scale(0.97); }
+.btn:hover   { opacity: 0.88; }
+.btn-primary   { background: var(--primary); color: white; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-danger    { background: var(--error); color: white; }
+.btn-success   { background: var(--success); color: white; }
+.btn-sm  { padding: 7px 12px; font-size: 0.83rem; width: auto; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { flex: 1; }
+
+/* =============================================
+   STAT CARDS
+   ============================================= */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-card  { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+.stat-value { font-size: 1.45rem; font-weight: 700; color: var(--primary-light); }
+.stat-label { font-size: 0.73rem; color: var(--muted); margin-top: 2px; }
+.stat-sub   { font-size: 0.75rem; color: var(--muted); }
+
+/* =============================================
+   ENTRY LIST
+   ============================================= */
+.entry-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 7px;
+  transition: background 0.15s;
+}
+.entry-item:hover { background: var(--border); }
+.entry-info { flex: 1; min-width: 0; }
+.entry-date  { font-size: 0.78rem; color: var(--muted); }
+.entry-hours { font-size: 1.05rem; font-weight: 600; }
+.entry-mission { font-size: 0.78rem; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+/* =============================================
+   WEEKLY TABLE
+   ============================================= */
+.week-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.week-table th {
+  padding: 8px 6px;
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.week-table td { padding: 9px 6px; border-bottom: 1px solid var(--surface2); }
+.week-table tr.today td { background: rgba(124,58,237,0.12); }
+.week-table tfoot tr td { background: var(--surface2); font-weight: 600; }
+
+/* =============================================
+   MONTHLY CALENDAR
+   ============================================= */
+.month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.month-day-header { text-align: center; font-size: 0.68rem; color: var(--muted); padding: 4px 0; font-weight: 700; }
+.month-day {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.1s;
+  background: var(--surface2);
+}
+.month-day:active { transform: scale(0.93); }
+.month-day.empty  { background: transparent; cursor: default; pointer-events: none; }
+.month-day.today  { border: 2px solid var(--primary-light); }
+.month-day.worked-full    { background: rgba(124,58,237,0.45); }
+.month-day.worked-partial { background: rgba(124,58,237,0.22); }
+.month-day.weekend        { background: rgba(255,255,255,0.03); }
+.month-day .day-num   { font-weight: 600; line-height: 1; }
+.month-day .day-hours { font-size: 0.6rem; color: var(--primary-light); line-height: 1; margin-top: 2px; }
+
+/* =============================================
+   MISSIONS
+   ============================================= */
+.mission-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.mission-item:hover { background: var(--border); }
+.mission-dot  { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.mission-info { flex: 1; min-width: 0; }
+.mission-name    { font-weight: 600; font-size: 0.95rem; }
+.mission-details { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+/* =============================================
+   AUTH / SETUP SCREENS
+   ============================================= */
+.screen-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 57px);
+  padding: 24px;
+  text-align: center;
+}
+.screen-icon    { font-size: 3.5rem; margin-bottom: 14px; }
+.screen-title   { font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; }
+.screen-subtitle { color: var(--muted); margin-bottom: 24px; line-height: 1.55; font-size: 0.92rem; max-width: 320px; }
+
+/* =============================================
+   MODAL (bottom sheet)
+   ============================================= */
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+#modal-content {
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 20px 16px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
+  animation: slideUp 0.22s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title { font-size: 1.05rem; font-weight: 700; }
+.modal-drag-handle {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+
+/* =============================================
+   ALERTS & BADGES
+   ============================================= */
+.alert {
+  padding: 10px 13px;
+  border-radius: var(--radius-sm);
+  font-size: 0.87rem;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+.alert-warning { background: rgba(245,158,11,0.14); border: 1px solid rgba(245,158,11,0.28); color: var(--warning); }
+.alert-success { background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.28); color: var(--success); }
+.alert-error   { background: rgba(239,68,68,0.14);  border: 1px solid rgba(239,68,68,0.28);  color: var(--error); }
+.alert-info    { background: rgba(124,58,237,0.14); border: 1px solid rgba(124,58,237,0.28); color: var(--primary-light); }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.73rem; font-weight: 600; }
+.badge-primary { background: rgba(124,58,237,0.2); color: var(--primary-light); }
+.badge-success { background: rgba(16,185,129,0.2); color: var(--success); }
+.badge-warning { background: rgba(245,158,11,0.2); color: var(--warning); }
+.badge-error   { background: rgba(239,68,68,0.2);  color: var(--error); }
+
+/* =============================================
+   SUMMARY BOX
+   ============================================= */
+.summary-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 13px 14px; }
+.summary-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 0.88rem; }
+.summary-row .lbl { color: var(--muted); }
+.summary-row .val { font-weight: 600; color: var(--primary-light); }
+.summary-row.total { border-top: 1px solid var(--border); margin-top: 5px; padding-top: 9px; font-size: 1rem; font-weight: 700; }
+.summary-row.total .val { color: var(--text); }
+.summary-row.sub .val { color: var(--muted); font-weight: 400; font-size: 0.83rem; }
+
+/* =============================================
+   NAVIGATION WEEK/MONTH
+   ============================================= */
+.nav-period {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+.nav-period button {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.nav-period button:hover { background: var(--border); }
+.nav-period .period-label { font-weight: 600; font-size: 0.92rem; text-align: center; flex: 1; }
+
+/* =============================================
+   PROGRESS BAR
+   ============================================= */
+.progress-wrap { background: var(--surface2); border-radius: 4px; height: 7px; overflow: hidden; margin-top: 5px; }
+.progress-bar  { background: var(--primary); border-radius: 4px; height: 7px; transition: width 0.4s; }
+.progress-bar.over { background: var(--warning); }
+
+/* =============================================
+   GUIDE BOX
+   ============================================= */
+.guide-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 13px 14px;
+  font-size: 0.83rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.guide-box code {
+  background: var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.79rem;
+  color: var(--primary-light);
+}
+.guide-box strong { color: var(--text); }
+
+/* =============================================
+   MODE BUTTONS (horaires / direct)
+   ============================================= */
+.mode-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
+.mode-toggle button {
+  flex: 1;
+  padding: 8px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  background: var(--surface2);
+  color: var(--muted);
+}
+.mode-toggle button.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+/* =============================================
+   MISC
+   ============================================= */
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; }
+.text-muted  { color: var(--muted); font-size: 0.85rem; }
+.text-center { text-align: center; }
+.mt-8  { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mb-0  { margin-bottom: 0 !important; }
+
+/* Color picker */
+.color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.color-swatch {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.color-swatch:hover   { transform: scale(1.15); }
+.color-swatch.active  { border-color: white; transform: scale(1.1); }
+
+/* Input mode section hidden/shown */
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============================================================
+       HEADER
+       ============================================================ -->
+  <header id="header">
+    <span class="logo">⏱ Pointeuse Intérim</span>
+    <div class="header-right">
+      <span id="sync-status" class="sync-badge"></span>
+      <button id="btn-sync"    class="icon-btn hidden" title="Synchroniser" onclick="manualSync()">↻</button>
+      <button id="btn-signout" class="icon-btn hidden" title="Se déconnecter" onclick="signOut()">⏏</button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       ÉCRAN : CONFIGURATION CLIENT ID
+       ============================================================ -->
+  <div id="screen-setup" class="screen hidden">
+    <div class="screen-center">
+      <div class="screen-icon">⚙️</div>
+      <div class="screen-title">Configuration Google</div>
+      <div class="screen-subtitle">Saisissez votre Client ID OAuth 2.0 pour activer la synchronisation Drive.</div>
+      <div style="width:100%;max-width:380px;text-align:left;">
+        <div class="form-group">
+          <label class="form-label">Client ID Google OAuth 2.0</label>
+          <input type="text" id="setup-client-id" class="form-control"
+                 placeholder="xxxxx.apps.googleusercontent.com">
+        </div>
+        <button class="btn btn-primary" onclick="saveSetup()">Enregistrer et continuer →</button>
+
+        <div class="guide-box mt-16">
+          <strong>📖 Comment obtenir votre Client ID :</strong><br><br>
+          1. <code>console.cloud.google.com</code> → créer/sélectionner un projet<br>
+          2. <strong>APIs &amp; Services</strong> → <strong>OAuth consent screen</strong><br>
+          &nbsp;&nbsp;→ Type : <code>External</code> → ajoutez votre email en "Test user"<br>
+          3. <strong>Credentials</strong> → <code>+ Create Credentials</code> → <code>OAuth client ID</code><br>
+          4. Type : <code>Web application</code><br>
+          5. <strong>Authorized JavaScript origins</strong> : URL de cette page<br>
+          &nbsp;&nbsp;(ex : <code>http://localhost:3000</code> ou votre domaine)<br>
+          6. Copiez le <code>Client ID</code> ci-dessus<br><br>
+          ⚠️ Le <strong>secret client</strong> n'est <em>jamais</em> nécessaire ici.<br>
+          Ne le partagez et ne l'intégrez jamais dans le code.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ÉCRAN : CONNEXION GOOGLE
+       ============================================================ -->
+  <div id="screen-auth" class="screen hidden">
+    <div class="screen-center">
+      <div class="screen-icon">🔐</div>
+      <div class="screen-title">Connexion à Google Drive</div>
+      <div class="screen-subtitle">Vos données seront stockées dans un fichier JSON sur votre Drive personnel. Aucune donnée ne transite par un serveur tiers.</div>
+      <div style="width:100%;max-width:300px;">
+        <button class="btn btn-primary" onclick="signIn()" style="font-size:1rem;">
+          <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0">
+            <path fill="white" d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"/>
+            <path fill="white" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+            <path fill="white" d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z"/>
+            <path fill="white" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.44 15.98 5.48 18 9 18z"/>
+          </svg>
+          Se connecter avec Google
+        </button>
+        <button class="btn btn-secondary mt-8" onclick="showSetup()">⚙ Modifier le Client ID</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ÉCRAN PRINCIPAL
+       ============================================================ -->
+  <div id="screen-main" class="screen hidden">
+    <nav id="tab-nav">
+      <button class="tab-btn active" data-tab="saisie"   onclick="switchTab('saisie')">Saisie</button>
+      <button class="tab-btn"        data-tab="semaine"  onclick="switchTab('semaine')">Semaine</button>
+      <button class="tab-btn"        data-tab="mois"     onclick="switchTab('mois')">Mois</button>
+      <button class="tab-btn"        data-tab="missions" onclick="switchTab('missions')">Missions</button>
+      <button class="tab-btn"        data-tab="reglages" onclick="switchTab('reglages')">Réglages</button>
+    </nav>
+    <main>
+      <div id="tab-saisie"   class="tab-pane"></div>
+      <div id="tab-semaine"  class="tab-pane hidden"></div>
+      <div id="tab-mois"     class="tab-pane hidden"></div>
+      <div id="tab-missions" class="tab-pane hidden"></div>
+      <div id="tab-reglages" class="tab-pane hidden"></div>
+    </main>
+  </div>
+
+</div><!-- #app -->
+
+<!-- ============================================================
+     MODAL (bottom sheet)
+     ============================================================ -->
+<div id="modal-overlay" class="hidden" onclick="closeModalOverlay(event)">
+  <div id="modal-content">
+    <div class="modal-drag-handle"></div>
+  </div>
+</div>
+
+<!-- Google Identity Services (GIS) — chargement asynchrone -->
+<script src="https://accounts.google.com/gsi/client" async></script>
+
+<script>
+/* ================================================================
+   POINTEUSE INTÉRIM — Application monopage
+   Stockage : Google Drive via OAuth 2.0 (scope drive.file)
+   Auteur   : généré pour usage personnel
+   ================================================================ */
+
+'use strict';
+
+// ================================================================
+// CONSTANTES
+// ================================================================
+const DRIVE_FILE_NAME  = 'pointeuse-data.json';
+const DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file';
+const LS_CLIENT_ID     = 'pte_client_id';
+const LS_DATA          = 'pte_data';
+const LS_FILE_ID       = 'pte_drive_file_id';
+const LS_PENDING       = 'pte_pending_save';
+const SAVE_DEBOUNCE_MS = 2500;
+
+const MISSION_COLORS = [
+  '#7C3AED','#2563EB','#059669','#D97706',
+  '#DC2626','#0891B2','#65A30D','#C026D3',
+];
+
+// ================================================================
+// ÉTAT GLOBAL
+// ================================================================
+const S = {
+  clientId:        localStorage.getItem(LS_CLIENT_ID) || '',
+  accessToken:     null,
+  tokenExpiry:     0,
+  driveFileId:     localStorage.getItem(LS_FILE_ID) || null,
+  data:            null,
+  saveTimer:       null,
+  weekOffset:      0,   // 0 = semaine courante
+  monthOffset:     0,   // 0 = mois courant
+  currentTab:      'saisie',
+  editingEntryId:  null,
+};
+
+// ================================================================
+// DONNÉES PAR DÉFAUT
+// ================================================================
+function defaultData() {
+  return {
+    version: 2,
+    settings: {
+      seuil_heures:  35,
+      maj_25_debut:  36,
+      maj_25_fin:    43,
+      maj_50_debut:  44,
+      taux_charges:  22,
+      agence:        '',
+      indemnite_repas: 0,
+      taux_km:       0.284,
+      objectif_heures: 0,
+      objectif_euros:  0,
+    },
+    missions: [],
+    entrees:  [],
+  };
+}
+
+// ================================================================
+// INITIALISATION
+// ================================================================
+window.addEventListener('load', () => {
+  if (!S.clientId) {
+    showScreen('setup');
+  } else {
+    showScreen('auth');
+  }
+});
+
+// ================================================================
+// NAVIGATION ENTRE ÉCRANS
+// ================================================================
+function showScreen(name) {
+  ['setup', 'auth', 'main'].forEach(s => {
+    document.getElementById('screen-' + s).classList.toggle('hidden', s !== name);
+  });
+}
+
+function showSetup() {
+  document.getElementById('setup-client-id').value = S.clientId;
+  showScreen('setup');
+}
+
+function saveSetup() {
+  const cid = (document.getElementById('setup-client-id').value || '').trim();
+  if (!cid) { alert('Veuillez saisir votre Client ID.'); return; }
+  S.clientId = cid;
+  localStorage.setItem(LS_CLIENT_ID, cid);
+  showScreen('auth');
+}
+
+// ================================================================
+// ONGLETS
+// ================================================================
+function switchTab(tab) {
+  S.currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab)
+  );
+  document.querySelectorAll('.tab-pane').forEach(p =>
+    p.classList.toggle('hidden', p.id !== 'tab-' + tab)
+  );
+  // Render si besoin
+  const renderers = {
+    saisie:   renderSaisie,
+    semaine:  renderSemaine,
+    mois:     renderMois,
+    missions: renderMissions,
+    reglages: renderReglages,
+  };
+  renderers[tab]?.();
+}
+
+// ================================================================
+// GOOGLE AUTH — Google Identity Services (token model)
+// ================================================================
+
+/**
+ * Déclenche le popup de sélection de compte Google.
+ * GIS utilise le "Token model" : pas de redirection, pas de code,
+ * on reçoit directement un access_token en mémoire.
+ * Le Client Secret n'est JAMAIS utilisé côté client.
+ */
+function signIn() {
+  if (!S.clientId) { alert('Configurez d\'abord votre Client ID.'); showSetup(); return; }
+
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id:      S.clientId,
+    scope:          DRIVE_SCOPE,
+    callback:       onTokenResponse,
+    error_callback: onAuthError,
+  });
+  client.requestAccessToken({ prompt: 'consent' });
+}
+
+function onTokenResponse(resp) {
+  if (resp.error) { onAuthError(resp); return; }
+  S.accessToken = resp.access_token;
+  // expires_in est en secondes ; on soustrait 60s de marge
+  S.tokenExpiry = Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000;
+  document.getElementById('btn-signout').classList.remove('hidden');
+  document.getElementById('btn-sync').classList.remove('hidden');
+  showScreen('main');
+  loadData();
+}
+
+function onAuthError(err) {
+  console.error('Auth error', err);
+  const msg = err.message || err.error || 'erreur inconnue';
+  alert('Erreur de connexion Google : ' + msg + '\n\nVérifiez que votre Client ID est correct et que l\'URL de cette page est bien ajoutée aux "Authorized JavaScript origins".');
+}
+
+function signOut() {
+  if (S.accessToken) {
+    try { google.accounts.oauth2.revoke(S.accessToken, () => {}); } catch(_) {}
+  }
+  S.accessToken = null;
+  S.tokenExpiry = 0;
+  localStorage.removeItem(LS_PENDING);
+  document.getElementById('btn-signout').classList.add('hidden');
+  document.getElementById('btn-sync').classList.add('hidden');
+  setSyncStatus('idle', '');
+  showScreen('auth');
+}
+
+function tokenValid() {
+  return !!(S.accessToken && Date.now() < S.tokenExpiry);
+}
+
+// ================================================================
+// GOOGLE DRIVE API — fonctions bas niveau
+// ================================================================
+
+/**
+ * Requête générique vers l'API Drive avec le Bearer token.
+ */
+async function driveReq(method, url, body, contentType) {
+  const headers = { 'Authorization': 'Bearer ' + S.accessToken };
+  const opts = { method, headers };
+  if (body !== undefined && body !== null) {
+    headers['Content-Type'] = contentType || 'application/json';
+    opts.body = (typeof body === 'string') ? body : JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  if (!res.ok) {
+    const txt = await res.text().catch(() => res.status);
+    throw new Error('Drive ' + res.status + ': ' + txt);
+  }
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('json') ? res.json() : res.text();
+}
+
+/** Cherche le fichier pointeuse sur Drive (scope drive.file = seuls les fichiers créés par l'app) */
+async function driveFindFile() {
+  const q = encodeURIComponent(`name='${DRIVE_FILE_NAME}' and trashed=false`);
+  const r = await driveReq('GET',
+    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&spaces=drive`
+  );
+  return r.files?.length ? r.files[0] : null;
+}
+
+/** Crée le fichier JSON sur Drive avec un upload multipart */
+async function driveCreateFile(data) {
+  const meta    = JSON.stringify({ name: DRIVE_FILE_NAME, mimeType: 'application/json' });
+  const content = JSON.stringify(data, null, 2);
+  const bnd     = 'BOUNDARY_POINTEUSE_' + Date.now();
+  const body    =
+    `--${bnd}\r\nContent-Type: application/json\r\n\r\n${meta}\r\n` +
+    `--${bnd}\r\nContent-Type: application/json\r\n\r\n${content}\r\n` +
+    `--${bnd}--`;
+
+  const res = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + S.accessToken,
+        'Content-Type': `multipart/related; boundary="${bnd}"`,
+      },
+      body,
+    }
+  );
+  if (!res.ok) throw new Error('Création fichier Drive échouée : ' + res.status);
+  return res.json();
+}
+
+/** Met à jour le contenu du fichier Drive (media upload simple) */
+async function driveUpdateFile(fileId, data) {
+  const res = await fetch(
+    `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + S.accessToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data, null, 2),
+    }
+  );
+  if (!res.ok) throw new Error('Mise à jour Drive échouée : ' + res.status);
+  return res.json();
+}
+
+/** Lit le contenu JSON du fichier Drive */
+async function driveReadFile(fileId) {
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    { headers: { 'Authorization': 'Bearer ' + S.accessToken } }
+  );
+  if (!res.ok) throw new Error('Lecture Drive échouée : ' + res.status);
+  return res.json();
+}
+
+// ================================================================
+// GESTION DES DONNÉES
+// ================================================================
+
+async function loadData() {
+  setSyncStatus('syncing', '⏳ Chargement…');
+  try {
+    // 1. Si on a déjà un fileId mémorisé, on essaie de lire directement
+    if (S.driveFileId) {
+      try {
+        S.data = await driveReadFile(S.driveFileId);
+      } catch (_) {
+        // Fichier supprimé ou inaccessible → on repart de zéro
+        S.driveFileId = null;
+        localStorage.removeItem(LS_FILE_ID);
+      }
+    }
+
+    // 2. Si pas de fileId (ou lecture échouée), on cherche sur Drive
+    if (!S.driveFileId) {
+      const found = await driveFindFile();
+      if (found) {
+        S.driveFileId = found.id;
+        localStorage.setItem(LS_FILE_ID, found.id);
+        S.data = await driveReadFile(found.id);
+      } else {
+        // Premier lancement : on récupère le cache local s'il y en a un
+        const local = loadLocal();
+        S.data = local || defaultData();
+        const created = await driveCreateFile(S.data);
+        S.driveFileId = created.id;
+        localStorage.setItem(LS_FILE_ID, created.id);
+      }
+    }
+
+    // Compatibilité avec ancienne version de données
+    S.data = migrateData(S.data);
+    saveLocal(S.data);
+    localStorage.removeItem(LS_PENDING);
+    setSyncStatus('synced', '✓ Synchronisé');
+
+  } catch (err) {
+    console.error('loadData error', err);
+    // Fallback sur cache local
+    const local = loadLocal();
+    if (local) {
+      S.data = migrateData(local);
+      setSyncStatus('offline', '⚠ Hors ligne');
+    } else {
+      S.data = defaultData();
+      setSyncStatus('error', '⚠ Erreur');
+    }
+  }
+  renderAll();
+}
+
+/** Migration entre versions de schéma */
+function migrateData(d) {
+  if (!d) return defaultData();
+  if (!d.settings) d.settings = defaultData().settings;
+  if (!d.missions) d.missions = [];
+  if (!d.entrees)  d.entrees  = [];
+  // Assure que tous les champs settings existent
+  const def = defaultData().settings;
+  Object.keys(def).forEach(k => { if (d.settings[k] === undefined) d.settings[k] = def[k]; });
+  return d;
+}
+
+/** Planifie une sauvegarde différée (debounce 2,5 s) */
+function scheduleSave() {
+  saveLocal(S.data);
+  localStorage.setItem(LS_PENDING, '1');
+  setSyncStatus('syncing', '⏳ Modification…');
+  clearTimeout(S.saveTimer);
+  S.saveTimer = setTimeout(saveToDrive, SAVE_DEBOUNCE_MS);
+}
+
+async function saveToDrive() {
+  if (!S.driveFileId) { setSyncStatus('error', '⚠ Pas de fichier'); return; }
+  if (!tokenValid())  { setSyncStatus('error', '⚠ Token expiré'); return; }
+  setSyncStatus('syncing', '⏳ Sauvegarde…');
+  try {
+    await driveUpdateFile(S.driveFileId, S.data);
+    localStorage.removeItem(LS_PENDING);
+    setSyncStatus('synced', '✓ Synchronisé');
+  } catch (err) {
+    console.error('saveToDrive error', err);
+    setSyncStatus('error', '⚠ Erreur sync');
+  }
+}
+
+async function manualSync() {
+  clearTimeout(S.saveTimer);
+  await saveToDrive();
+}
+
+function saveLocal(d) { localStorage.setItem(LS_DATA, JSON.stringify(d)); }
+function loadLocal()  {
+  try { return JSON.parse(localStorage.getItem(LS_DATA)); } catch(_) { return null; }
+}
+
+function setSyncStatus(cls, txt) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-badge ' + cls;
+  el.textContent = txt;
+}
+
+// ================================================================
+// UTILITAIRES
+// ================================================================
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function fmtDate(s) {
+  if (!s) return '';
+  return new Date(s + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function fmtDateLong(s) {
+  if (!s) return '';
+  return new Date(s + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function fmtH(h) {
+  if (h === null || h === undefined || isNaN(h)) return '–';
+  const hrs  = Math.floor(h);
+  const mins = Math.round((h - hrs) * 60);
+  return hrs + 'h' + (mins > 0 ? String(mins).padStart(2, '0') : '');
+}
+
+function fmtEur(n) {
+  if (n === null || isNaN(n)) return '–';
+  return n.toFixed(2).replace('.', ',') + ' €';
+}
+
+function getMonday(date) {
+  const d   = new Date(date);
+  const dow = d.getDay(); // 0 = dimanche
+  const diff = dow === 0 ? -6 : 1 - dow;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function dateStr(d) { return d.toISOString().slice(0, 10); }
+
+function getMission(id) { return S.data.missions.find(m => m.id === id) || null; }
+function getMissionName(id) { return getMission(id)?.nom || (id ? '(supprimée)' : '–'); }
+
+// ================================================================
+// CALCULS
+// ================================================================
+
+/** Retourne les heures travaillées d'une entrée (décimal) */
+function calcHeures(e) {
+  // Saisie directe prioritaire
+  if (e.heures_directes !== null && e.heures_directes !== undefined && e.heures_directes !== '') {
+    return Math.max(0, parseFloat(e.heures_directes) || 0);
+  }
+  if (!e.heure_arrivee || !e.heure_depart) return 0;
+  const [ah, am] = e.heure_arrivee.split(':').map(Number);
+  const [dh, dm] = e.heure_depart.split(':').map(Number);
+  let total = (dh * 60 + dm) - (ah * 60 + am);
+  if (total < 0) total += 1440; // passage minuit
+  if (!e.pause_payee) total -= (parseInt(e.pause_minutes, 10) || 0);
+  // Majoration selon type de journée
+  let coef = 1;
+  if (e.type_jour === 'nuit')     coef = 1.25;
+  if (e.type_jour === 'dimanche') coef = 1.25;
+  if (e.type_jour === 'ferie')    coef = 1.50;
+  return Math.max(0, (total / 60) * coef);
+}
+
+/** Retourne le brut d'un ensemble d'heures dans la semaine */
+function calcBrutSemaine(heures, taux, set) {
+  if (!taux || !heures) return { normal: heures, sup25: 0, sup50: 0, brut: heures * (taux || 0) };
+  const seuil = set.seuil_heures || 35;
+  const p25f  = set.maj_25_fin  || 43;
+
+  const normal = Math.min(heures, seuil);
+  const sup25  = heures > seuil  ? Math.min(heures - seuil, p25f - seuil) : 0;
+  const sup50  = heures > p25f   ? heures - p25f : 0;
+  const brut   = normal * taux + sup25 * taux * 1.25 + sup50 * taux * 1.50;
+  return { normal, sup25, sup50, brut };
+}
+
+/** Calcule toutes les entrées d'une semaine donnée */
+function calcWeek(monday) {
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d   = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const ds  = dateStr(d);
+    const es  = S.data.entrees.filter(e => e.date === ds);
+    days.push({ date: ds, entries: es, totalH: es.reduce((s, e) => s + calcHeures(e), 0) });
+  }
+  return days;
+}
+
+// ================================================================
+// RENDU GLOBAL
+// ================================================================
+function renderAll() {
+  renderSaisie();
+  renderSemaine();
+  renderMois();
+  renderMissions();
+  renderReglages();
+}
+
+// ================================================================
+// ONGLET — SAISIE
+// ================================================================
+function renderSaisie() {
+  const el = document.getElementById('tab-saisie');
+  if (!S.data) return;
+
+  const td       = todayStr();
+  const todayH   = S.data.entrees.filter(e => e.date === td).reduce((s, e) => s + calcHeures(e), 0);
+  const monday   = getMonday(new Date());
+  const weekDays = calcWeek(monday);
+  const weekH    = weekDays.reduce((s, d) => s + d.totalH, 0);
+  const missions = S.data.missions;
+
+  const mOpts = missions.map(m =>
+    `<option value="${m.id}">${m.nom}${m.taux_horaire ? ' – ' + m.taux_horaire + ' €/h' : ''}</option>`
+  ).join('');
+
+  // Récentes (10 dernières)
+  const recentes = [...S.data.entrees]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 12);
+
+  // Valeurs de l'entrée en cours d'édition
+  const ed = S.editingEntryId ? S.data.entrees.find(e => e.id === S.editingEntryId) : null;
+
+  el.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">${fmtH(todayH)}</div>
+        <div class="stat-label">Aujourd'hui</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${fmtH(weekH)}</div>
+        <div class="stat-label">Cette semaine</div>
+        ${weekH > 35 ? `<div class="stat-sub" style="color:var(--warning)">+${fmtH(weekH-35)} sup.</div>` : ''}
+      </div>
+    </div>
+
+    ${weekH > 48 ? `<div class="alert alert-warning">⚠️ Vous dépassez 48h cette semaine (limite légale).</div>` : ''}
+
+    <div class="card">
+      <div class="card-title">${ed ? '✏ Modifier l\'entrée' : 'Nouvelle entrée'}</div>
+
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" id="e-date" class="form-control" value="${ed?.date || td}">
+      </div>
+
+      <div class="mode-toggle">
+        <button id="btn-mode-h" class="active" onclick="setMode('horaires')">⏰ Par horaires</button>
+        <button id="btn-mode-d"               onclick="setMode('direct')">🔢 Saisie directe</button>
+      </div>
+
+      <div id="mode-horaires">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Arrivée</label>
+            <input type="time" id="e-arrivee" class="form-control" value="${ed?.heure_arrivee || '08:00'}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Départ</label>
+            <input type="time" id="e-depart" class="form-control" value="${ed?.heure_depart || '17:00'}">
+          </div>
+        </div>
+      </div>
+
+      <div id="mode-direct" class="hidden">
+        <div class="form-group">
+          <label class="form-label">Heures travaillées</label>
+          <input type="number" id="e-hdirect" class="form-control"
+                 placeholder="ex : 7,5" step="0.25" min="0" max="24"
+                 value="${ed?.heures_directes ?? ''}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Pause (min)</label>
+          <input type="number" id="e-pause" class="form-control"
+                 value="${ed?.pause_minutes ?? 60}" min="0" max="300">
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:3px;">
+          <label class="checkbox-group">
+            <input type="checkbox" id="e-ppayee" ${ed?.pause_payee ? 'checked' : ''}>
+            <span style="font-size:0.85rem;color:var(--muted)">Pause payée</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Type de journée</label>
+        <select id="e-type" class="form-control">
+          <option value="normal"   ${(ed?.type_jour||'normal')==='normal'   ? 'selected':''}>Normale</option>
+          <option value="nuit"     ${ed?.type_jour==='nuit'     ? 'selected':''}>Nuit (+25 %)</option>
+          <option value="dimanche" ${ed?.type_jour==='dimanche' ? 'selected':''}>Dimanche (+25 %)</option>
+          <option value="ferie"    ${ed?.type_jour==='ferie'    ? 'selected':''}>Férié (+50 %)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Mission</label>
+        <div style="display:flex;gap:8px;">
+          <select id="e-mission" class="form-control" onchange="onMissionChange()">
+            <option value="">– Aucune –</option>
+            ${mOpts}
+          </select>
+          <button class="icon-btn" onclick="openMissionModal(null)" title="Nouvelle mission" style="flex-shrink:0">+</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Taux horaire (€/h)</label>
+        <input type="number" id="e-taux" class="form-control"
+               placeholder="ex : 12,50" step="0.01" min="0"
+               value="${ed?.taux_horaire || ''}">
+      </div>
+
+      <div class="form-row mb-0">
+        <label class="checkbox-group form-group mb-0">
+          <input type="checkbox" id="e-repas" ${ed?.indemnite_repas ? 'checked' : ''}>
+          <span style="font-size:0.85rem;color:var(--muted)">Indemnité repas</span>
+        </label>
+        <div class="form-group mb-0">
+          <input type="number" id="e-km" class="form-control"
+                 placeholder="km parcourus" min="0" step="1"
+                 value="${ed?.km || ''}">
+        </div>
+      </div>
+
+      <div class="form-group mt-12">
+        <label class="form-label">Notes libres</label>
+        <textarea id="e-notes" class="form-control" rows="2"
+                  placeholder="Informations supplémentaires…">${ed?.notes || ''}</textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-save-entry"
+                onclick="saveEntry()">
+          ${ed ? '✓ Mettre à jour' : '✓ Enregistrer'}
+        </button>
+        ${ed ? `<button class="btn btn-secondary" style="flex:0;padding:12px 14px" onclick="cancelEdit()" title="Annuler">✕</button>` : ''}
+      </div>
+
+    </div><!-- .card -->
+
+    <div class="card">
+      <div class="card-title">Entrées récentes</div>
+      ${renderEntriesList(recentes)}
+    </div>
+  `;
+
+  // Pré-sélectionner la mission si édition
+  if (ed?.mission_id) {
+    const sel = document.getElementById('e-mission');
+    if (sel) sel.value = ed.mission_id;
+  }
+
+  // Mode d'entrée selon édition
+  if (ed && (ed.heures_directes !== null && ed.heures_directes !== undefined && ed.heures_directes !== '')) {
+    setMode('direct', true);
+  }
+}
+
+function setMode(mode, noRender) {
+  const isH = mode === 'horaires';
+  document.getElementById('mode-horaires').classList.toggle('hidden', !isH);
+  document.getElementById('mode-direct').classList.toggle('hidden', isH);
+  document.getElementById('btn-mode-h').classList.toggle('active', isH);
+  document.getElementById('btn-mode-d').classList.toggle('active', !isH);
+}
+
+function onMissionChange() {
+  const sel = document.getElementById('e-mission');
+  const m   = getMission(sel?.value);
+  if (m?.taux_horaire) {
+    const ti = document.getElementById('e-taux');
+    if (ti && !ti.value) ti.value = m.taux_horaire;
+  }
+}
+
+function renderEntriesList(entries) {
+  if (!entries.length) return '<p class="text-muted text-center" style="padding:10px 0">Aucune entrée.</p>';
+  return entries.map(e => {
+    const h = calcHeures(e);
+    const m = getMission(e.mission_id);
+    const col = m?.couleur || 'var(--primary-light)';
+    return `
+      <div class="entry-item">
+        ${m ? `<div style="width:4px;height:38px;border-radius:2px;background:${col};flex-shrink:0"></div>` : ''}
+        <div class="entry-info">
+          <div class="entry-date">${fmtDate(e.date)}</div>
+          <div class="entry-hours">${fmtH(h)}
+            ${e.type_jour && e.type_jour !== 'normal' ? `<span class="badge badge-warning" style="font-size:0.65rem;margin-left:4px">${e.type_jour}</span>` : ''}
+          </div>
+          ${m ? `<div class="entry-mission" style="color:${col}">${m.nom}</div>` : ''}
+        </div>
+        <div class="entry-actions">
+          <button class="icon-btn" onclick="editEntry('${e.id}')" title="Modifier">✏</button>
+          <button class="icon-btn" onclick="deleteEntry('${e.id}')" title="Supprimer">🗑</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function saveEntry() {
+  const isHMode = !document.getElementById('mode-horaires').classList.contains('hidden');
+  const entryId = S.editingEntryId || uid();
+
+  const entry = {
+    id:             entryId,
+    date:           document.getElementById('e-date').value,
+    heure_arrivee:  isHMode ? (document.getElementById('e-arrivee')?.value || null) : null,
+    heure_depart:   isHMode ? (document.getElementById('e-depart')?.value || null) : null,
+    heures_directes: !isHMode ? (parseFloat(document.getElementById('e-hdirect')?.value) || null) : null,
+    pause_minutes:  parseInt(document.getElementById('e-pause').value, 10) || 0,
+    pause_payee:    document.getElementById('e-ppayee').checked,
+    mission_id:     document.getElementById('e-mission').value || '',
+    taux_horaire:   parseFloat(document.getElementById('e-taux').value) || 0,
+    type_jour:      document.getElementById('e-type').value || 'normal',
+    indemnite_repas: document.getElementById('e-repas').checked,
+    km:             parseFloat(document.getElementById('e-km').value) || 0,
+    notes:          document.getElementById('e-notes').value || '',
+  };
+
+  if (!entry.date) { alert('Veuillez saisir une date.'); return; }
+
+  if (S.editingEntryId) {
+    const idx = S.data.entrees.findIndex(e => e.id === S.editingEntryId);
+    if (idx >= 0) S.data.entrees[idx] = entry;
+  } else {
+    S.data.entrees.push(entry);
+  }
+
+  S.editingEntryId = null;
+  scheduleSave();
+  renderAll();
+
+  // Feedback visuel
+  const btn = document.getElementById('btn-save-entry');
+  if (btn) {
+    btn.textContent = '✓ Enregistré !';
+    btn.style.background = 'var(--success)';
+    setTimeout(() => renderSaisie(), 1800);
+  }
+}
+
+function cancelEdit() {
+  S.editingEntryId = null;
+  renderSaisie();
+}
+
+function editEntry(id) {
+  S.editingEntryId = id;
+  switchTab('saisie');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteEntry(id) {
+  if (!confirm('Supprimer cette entrée ?')) return;
+  S.data.entrees = S.data.entrees.filter(e => e.id !== id);
+  if (S.editingEntryId === id) S.editingEntryId = null;
+  scheduleSave();
+  renderAll();
+}
+
+function openDateEntry(ds) {
+  S.editingEntryId = null;
+  switchTab('saisie');
+  setTimeout(() => {
+    const di = document.getElementById('e-date');
+    if (di) { di.value = ds; di.focus(); }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 60);
+}
+
+// ================================================================
+// ONGLET — SEMAINE
+// ================================================================
+function renderSemaine() {
+  const el = document.getElementById('tab-semaine');
+  if (!S.data) return;
+
+  const base   = getMonday(new Date());
+  base.setDate(base.getDate() + S.weekOffset * 7);
+  const sunday = new Date(base);
+  sunday.setDate(base.getDate() + 6);
+
+  const weekDays = calcWeek(base);
+  const totalH   = weekDays.reduce((s, d) => s + d.totalH, 0);
+  const set      = S.data.settings;
+  const seuil    = set.seuil_heures || 35;
+  const supH     = Math.max(0, totalH - seuil);
+  const sup25H   = Math.min(supH, (set.maj_25_fin || 43) - seuil);
+  const sup50H   = totalH > (set.maj_25_fin || 43) ? totalH - (set.maj_25_fin || 43) : 0;
+
+  // Brut estimé de la semaine (par entrée pour tenir compte des missions différentes)
+  const allEntries = weekDays.flatMap(d => d.entries);
+  let brutTotal = 0;
+  // On calcule le brut global en appliquant les majorations heures sup sur le total
+  // avec le taux moyen pondéré si plusieurs missions
+  if (allEntries.length > 0) {
+    const tauxMoyen = allEntries.reduce((s, e) => s + (parseFloat(e.taux_horaire) || 0) * calcHeures(e), 0)
+                    / (totalH || 1);
+    if (tauxMoyen > 0) {
+      const r = calcBrutSemaine(totalH, tauxMoyen, set);
+      brutTotal = r.brut;
+    }
+  }
+
+  const periodLabel = base.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    + ' – ' + sunday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const td    = todayStr();
+
+  const rows = weekDays.map((d, i) => {
+    const isToday = d.date === td;
+    const missNames = [...new Set(d.entries.map(e => getMission(e.mission_id)?.nom).filter(Boolean))].join(', ');
+    const dayMons = d.entries.some(e => e.indemnite_repas) ? ' 🍽' : '';
+    return `
+      <tr class="${isToday ? 'today' : ''}">
+        <td>
+          <strong>${JOURS[i]}</strong>
+          <div style="font-size:0.72rem;color:var(--muted)">${fmtDate(d.date).split(' ').slice(1).join(' ')}</div>
+        </td>
+        <td>${d.totalH > 0 ? `<strong>${fmtH(d.totalH)}</strong>` : '<span style="color:var(--muted)">–</span>'}</td>
+        <td style="font-size:0.78rem;color:var(--primary-light)">${missNames || '–'}${dayMons}</td>
+        <td>
+          <button class="icon-btn" style="padding:4px 9px;font-size:0.82rem"
+                  onclick="openDateEntry('${d.date}')">+</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  const ifm  = brutTotal * 0.1;
+  const iccp = (brutTotal + ifm) * 0.1;
+
+  el.innerHTML = `
+    <div class="nav-period">
+      <button onclick="S.weekOffset--;renderSemaine()">‹</button>
+      <span class="period-label">${periodLabel}</span>
+      <button onclick="S.weekOffset++;renderSemaine()">›</button>
+    </div>
+
+    ${S.weekOffset === 0 && totalH > 48 ? `<div class="alert alert-warning">⚠️ Dépassement des 48h légales !</div>` : ''}
+    ${S.weekOffset !== 0 ? `<button class="btn btn-secondary btn-sm mb-0" style="margin-bottom:10px" onclick="S.weekOffset=0;renderSemaine()">↩ Semaine courante</button>` : ''}
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="week-table">
+        <thead>
+          <tr>
+            <th>Jour</th><th>Heures</th><th>Mission</th><th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td>${fmtH(totalH)}</td>
+            <td colspan="2">
+              ${supH > 0 ? `<span class="badge badge-warning">+${fmtH(supH)} sup.</span>` : ''}
+              ${totalH > 48 ? `<span class="badge badge-error" style="margin-left:4px">48h !</span>` : ''}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="summary-box">
+      <div class="summary-row"><span class="lbl">Heures normales (≤ ${seuil}h)</span><span class="val">${fmtH(Math.min(totalH, seuil))}</span></div>
+      ${sup25H > 0 ? `<div class="summary-row"><span class="lbl">Heures sup. +25 % (${seuil+1}–${set.maj_25_fin||43}h)</span><span class="val">${fmtH(sup25H)}</span></div>` : ''}
+      ${sup50H > 0 ? `<div class="summary-row"><span class="lbl">Heures sup. +50 % (≥ ${set.maj_50_debut||44}h)</span><span class="val">${fmtH(sup50H)}</span></div>` : ''}
+      <div class="summary-row total"><span>Total semaine</span><span class="val">${fmtH(totalH)}</span></div>
+      ${brutTotal > 0 ? `
+        <hr class="divider">
+        <div class="summary-row"><span class="lbl">Brut estimé</span><span class="val">${fmtEur(brutTotal)}</span></div>
+        <div class="summary-row sub"><span class="lbl">+ IFM (10 %)</span><span class="val">${fmtEur(ifm)}</span></div>
+        <div class="summary-row sub"><span class="lbl">+ ICCP (10 %)</span><span class="val">${fmtEur(iccp)}</span></div>
+        <div class="summary-row total"><span>Sous-total brut</span><span class="val">${fmtEur(brutTotal + ifm + iccp)}</span></div>
+      ` : ''}
+    </div>
+
+    <button class="btn btn-secondary mt-12" onclick="exportCSV('week', '${dateStr(base)}')">
+      ⬇ Exporter CSV semaine
+    </button>
+  `;
+}
+
+// ================================================================
+// ONGLET — MOIS
+// ================================================================
+function renderMois() {
+  const el = document.getElementById('tab-mois');
+  if (!S.data) return;
+
+  const now   = new Date();
+  const pivot = new Date(now.getFullYear(), now.getMonth() + S.monthOffset, 1);
+  const year  = pivot.getFullYear();
+  const month = pivot.getMonth();
+  const last  = new Date(year, month + 1, 0);
+
+  const label = pivot.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+  const monthEntries = S.data.entrees.filter(e => {
+    const d = new Date(e.date + 'T00:00:00');
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+
+  const totalH = monthEntries.reduce((s, e) => s + calcHeures(e), 0);
+  const set    = S.data.settings;
+
+  // Brut mensuel (calcul par semaine pour les heures sup)
+  const weeksInMonth = new Set();
+  monthEntries.forEach(e => weeksInMonth.add(dateStr(getMonday(new Date(e.date + 'T00:00:00')))));
+  let brutMois = 0;
+  weeksInMonth.forEach(ws => {
+    const wd = calcWeek(new Date(ws + 'T00:00:00'));
+    const we = wd.flatMap(d => d.entries);
+    const wH = wd.reduce((s, d) => s + d.totalH, 0);
+    const taux = we.reduce((s, e) => s + (parseFloat(e.taux_horaire) || 0) * calcHeures(e), 0) / (wH || 1);
+    if (taux > 0 && wH > 0) brutMois += calcBrutSemaine(wH, taux, set).brut;
+  });
+
+  // Carte calendrier
+  let startDow = pivot.getDay(); // 0 = dim
+  startDow = startDow === 0 ? 6 : startDow - 1; // lundi = 0
+
+  const entryMap = {};
+  monthEntries.forEach(e => {
+    entryMap[e.date] = (entryMap[e.date] || 0) + calcHeures(e);
+  });
+
+  const td = todayStr();
+  const HEADS = ['L','M','M','J','V','S','D'].map(h =>
+    `<div class="month-day-header">${h}</div>`
+  ).join('');
+
+  let cells = Array(startDow).fill('<div class="month-day empty"></div>').join('');
+  for (let day = 1; day <= last.getDate(); day++) {
+    const ds  = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const h   = entryMap[ds] || 0;
+    const dow = (startDow + day - 1) % 7; // 0=lun … 6=dim
+    const isWeekend = dow >= 5;
+    let cls = 'month-day' + (isWeekend && !h ? ' weekend' : '');
+    if (ds === td) cls += ' today';
+    if (h >= 7)   cls += ' worked-full';
+    else if (h > 0) cls += ' worked-partial';
+
+    cells += `
+      <div class="${cls}" onclick="openDateEntry('${ds}')" title="${h > 0 ? fmtH(h) : 'Ajouter une entrée'}">
+        <span class="day-num">${day}</span>
+        ${h > 0 ? `<span class="day-hours">${fmtH(h)}</span>` : ''}
+      </div>`;
+  }
+
+  const objH   = set.objectif_heures || 0;
+  const objEur = set.objectif_euros   || 0;
+  const pctH   = objH > 0 ? Math.min(100, (totalH / objH) * 100) : 0;
+  const ifm    = brutMois * 0.10;
+  const iccp   = (brutMois + ifm) * 0.10;
+  const charges = brutMois * (set.taux_charges || 22) / 100;
+  const net    = brutMois - charges;
+
+  el.innerHTML = `
+    <div class="nav-period">
+      <button onclick="S.monthOffset--;renderMois()">‹</button>
+      <span class="period-label" style="text-transform:capitalize">${label}</span>
+      <button onclick="S.monthOffset++;renderMois()">›</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">${fmtH(totalH)}</div>
+        <div class="stat-label">Heures ce mois</div>
+        ${objH > 0 ? `<div class="stat-sub">${Math.round(pctH)} % de l'objectif</div>` : ''}
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${brutMois > 0 ? fmtEur(brutMois) : '–'}</div>
+        <div class="stat-label">Brut estimé</div>
+        ${net > 0 ? `<div class="stat-sub">Net ~${fmtEur(net)}</div>` : ''}
+      </div>
+    </div>
+
+    ${objH > 0 ? `
+      <div class="card">
+        <div class="card-title">Objectif mensuel</div>
+        <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:5px">
+          <span>Heures</span><span>${fmtH(totalH)} / ${fmtH(objH)}</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar ${pctH > 100 ? 'over' : ''}" style="width:${pctH.toFixed(1)}%"></div>
+        </div>
+        ${objEur > 0 && brutMois > 0 ? `
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-top:10px;margin-bottom:5px">
+            <span>Revenus</span><span>${fmtEur(brutMois)} / ${fmtEur(objEur)}</span>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width:${Math.min(100,(brutMois/objEur*100)).toFixed(1)}%"></div>
+          </div>
+        ` : ''}
+      </div>
+    ` : ''}
+
+    <div class="card">
+      <div class="card-title">Calendrier</div>
+      <div class="month-grid">
+        ${HEADS}
+        ${cells}
+      </div>
+    </div>
+
+    ${brutMois > 0 ? `
+      <div class="summary-box">
+        <div class="summary-row"><span class="lbl">Brut</span><span class="val">${fmtEur(brutMois)}</span></div>
+        <div class="summary-row sub"><span class="lbl">+ IFM (10 %)</span><span class="val">${fmtEur(ifm)}</span></div>
+        <div class="summary-row sub"><span class="lbl">+ ICCP (10 %)</span><span class="val">${fmtEur(iccp)}</span></div>
+        <div class="summary-row"><span class="lbl">Sous-total brut</span><span class="val">${fmtEur(brutMois + ifm + iccp)}</span></div>
+        <hr class="divider">
+        <div class="summary-row sub"><span class="lbl">– Charges sal. (~${set.taux_charges}%)</span><span class="val" style="color:var(--error)">– ${fmtEur(charges)}</span></div>
+        <div class="summary-row total"><span>Net estimé</span><span class="val">${fmtEur(net)}</span></div>
+      </div>
+    ` : ''}
+
+    <button class="btn btn-secondary mt-12"
+            onclick="exportCSV('month', '${year}-${String(month+1).padStart(2,'0')}')">
+      ⬇ Exporter CSV mois
+    </button>
+  `;
+}
+
+// ================================================================
+// ONGLET — MISSIONS
+// ================================================================
+function renderMissions() {
+  const el = document.getElementById('tab-missions');
+  if (!S.data) return;
+
+  const list = S.data.missions.map(m => {
+    const entriesCount = S.data.entrees.filter(e => e.mission_id === m.id).length;
+    const detail = [
+      m.taux_horaire ? m.taux_horaire + ' €/h' : '',
+      m.heures_semaine ? m.heures_semaine + 'h/sem.' : '',
+      m.date_debut ? 'Depuis ' + fmtDate(m.date_debut) : '',
+      entriesCount + ' entrée' + (entriesCount > 1 ? 's' : ''),
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="mission-item" onclick="openMissionModal('${m.id}')">
+        <div class="mission-dot" style="background:${m.couleur || 'var(--primary)'}"></div>
+        <div class="mission-info">
+          <div class="mission-name">${m.nom}</div>
+          <div class="mission-details">${detail}</div>
+          ${m.date_fin ? `<div style="font-size:0.73rem;color:var(--warning)">Fin prévue : ${fmtDate(m.date_fin)}</div>` : ''}
+        </div>
+        <button class="icon-btn" onclick="event.stopPropagation();deleteMission('${m.id}')">🗑</button>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <button class="btn btn-primary" onclick="openMissionModal(null)" style="margin-bottom:14px">
+      + Ajouter une mission
+    </button>
+    ${list || '<p class="text-muted text-center" style="padding:20px 0">Aucune mission enregistrée.</p>'}
+  `;
+}
+
+// ================================================================
+// ONGLET — RÉGLAGES
+// ================================================================
+function renderReglages() {
+  const el = document.getElementById('tab-reglages');
+  if (!S.data) return;
+  const s = S.data.settings;
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">Heures supplémentaires</div>
+      <div class="form-group">
+        <label class="form-label">Seuil heures normales (h/semaine)</label>
+        <input type="number" id="r-seuil" class="form-control" value="${s.seuil_heures}" min="1" max="60">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Début majorat. +25 %</label>
+          <input type="number" id="r-m25d" class="form-control" value="${s.maj_25_debut}" min="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fin majorat. +25 %</label>
+          <input type="number" id="r-m25f" class="form-control" value="${s.maj_25_fin}" min="1">
+        </div>
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label">Début majorat. +50 %</label>
+        <input type="number" id="r-m50d" class="form-control" value="${s.maj_50_debut}" min="1">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Rémunération</div>
+      <div class="form-group">
+        <label class="form-label">Taux de charges salariales (%)</label>
+        <input type="number" id="r-charges" class="form-control" value="${s.taux_charges}" min="0" max="50" step="0.1">
+        <div class="text-muted mt-8">Utilisé pour estimer le net (brut – charges). Valeur indicative, ~22 % pour l'intérim.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Indemnité repas (€ / jour)</label>
+        <input type="number" id="r-repas" class="form-control" value="${s.indemnite_repas}" min="0" step="0.01">
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label">Taux kilométrique (€/km)</label>
+        <input type="number" id="r-km" class="form-control" value="${s.taux_km}" min="0" step="0.001">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Informations agence</div>
+      <div class="form-group mb-0">
+        <label class="form-label">Agence d'intérim</label>
+        <input type="text" id="r-agence" class="form-control" value="${s.agence}" placeholder="Nom de l'agence">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Objectifs mensuels</div>
+      <div class="form-row mb-0">
+        <div class="form-group mb-0">
+          <label class="form-label">Heures cibles</label>
+          <input type="number" id="r-objh" class="form-control" value="${s.objectif_heures}" min="0">
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Revenus cibles (€)</label>
+          <input type="number" id="r-objeur" class="form-control" value="${s.objectif_euros}" min="0">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveReglages()">✓ Sauvegarder</button>
+
+    <div class="card mt-12">
+      <div class="card-title">Google Drive</div>
+      <div class="summary-row" style="font-size:0.85rem;padding:4px 0">
+        <span class="lbl">Fichier</span>
+        <span style="font-family:monospace;font-size:0.78rem">${DRIVE_FILE_NAME}</span>
+      </div>
+      <div class="summary-row" style="font-size:0.85rem;padding:4px 0">
+        <span class="lbl">Statut</span>
+        <span id="r-sync-status">${document.getElementById('sync-status')?.textContent || '–'}</span>
+      </div>
+      <div class="btn-row mt-12">
+        <button class="btn btn-secondary" onclick="manualSync()">↻ Synchroniser</button>
+        <button class="btn btn-secondary" onclick="exportJSON()">⬇ Export JSON</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Configuration OAuth</div>
+      <div class="form-group">
+        <label class="form-label">Client ID Google</label>
+        <input type="text" id="r-cid" class="form-control" value="${S.clientId}"
+               placeholder="xxxxx.apps.googleusercontent.com">
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="saveClientId()">Mettre à jour</button>
+      <div class="guide-box mt-12">
+        <strong>ℹ️ Rappel sécurité</strong><br>
+        Seul le <code>Client ID</code> est intégré dans cette application.<br>
+        Le <strong>Secret client</strong> n'est jamais utilisé côté navigateur et ne doit jamais figurer dans ce fichier.
+      </div>
+    </div>
+
+    <div class="card" style="border-color:rgba(239,68,68,0.3)">
+      <div class="card-title" style="color:var(--error)">Zone dangereuse</div>
+      <button class="btn btn-danger" onclick="confirmReset()">⚠ Réinitialiser toutes les données</button>
+    </div>
+  `;
+}
+
+function saveReglages() {
+  const s = S.data.settings;
+  s.seuil_heures   = parseFloat(document.getElementById('r-seuil').value)   || 35;
+  s.maj_25_debut   = parseFloat(document.getElementById('r-m25d').value)    || 36;
+  s.maj_25_fin     = parseFloat(document.getElementById('r-m25f').value)    || 43;
+  s.maj_50_debut   = parseFloat(document.getElementById('r-m50d').value)    || 44;
+  s.taux_charges   = parseFloat(document.getElementById('r-charges').value) || 22;
+  s.indemnite_repas = parseFloat(document.getElementById('r-repas').value)  || 0;
+  s.taux_km        = parseFloat(document.getElementById('r-km').value)      || 0.284;
+  s.agence         = document.getElementById('r-agence').value || '';
+  s.objectif_heures = parseFloat(document.getElementById('r-objh').value)   || 0;
+  s.objectif_euros  = parseFloat(document.getElementById('r-objeur').value) || 0;
+
+  scheduleSave();
+  renderAll();
+
+  const btn = document.querySelector('#tab-reglages .btn-primary');
+  if (btn) {
+    btn.textContent = '✓ Sauvegardé !';
+    btn.style.background = 'var(--success)';
+    setTimeout(() => { btn.textContent = '✓ Sauvegarder'; btn.style.background = ''; }, 2000);
+  }
+}
+
+function saveClientId() {
+  const cid = (document.getElementById('r-cid')?.value || '').trim();
+  if (!cid) return;
+  S.clientId = cid;
+  localStorage.setItem(LS_CLIENT_ID, cid);
+  alert('Client ID mis à jour. Reconnectez-vous pour appliquer le changement.');
+}
+
+function confirmReset() {
+  if (!confirm('⚠️ Toutes vos données locales seront effacées.\nCette action est irréversible.\n\nContinuer ?')) return;
+  S.data = defaultData();
+  saveLocal(S.data);
+  scheduleSave();
+  renderAll();
+  alert('Données réinitialisées.');
+}
+
+// ================================================================
+// MODAL — MISSION
+// ================================================================
+function openMissionModal(missionId) {
+  const m = missionId ? getMission(missionId) : null;
+
+  const swatches = MISSION_COLORS.map(c => {
+    const active = (m?.couleur || MISSION_COLORS[0]) === c ? 'active' : '';
+    return `<div class="color-swatch ${active}" style="background:${c}" data-c="${c}"
+               onclick="pickColor('${c}')"></div>`;
+  }).join('');
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-drag-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">${m ? 'Modifier la mission' : 'Nouvelle mission'}</span>
+      <button class="icon-btn" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Nom de l'entreprise *</label>
+      <input type="text" id="m-nom" class="form-control"
+             value="${m?.nom || ''}" placeholder="Société ABC" autofocus>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Adresse du site</label>
+      <input type="text" id="m-adresse" class="form-control" value="${m?.adresse || ''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contact / Responsable</label>
+      <input type="text" id="m-contact" class="form-control" value="${m?.contact || ''}">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Taux horaire (€/h)</label>
+        <input type="number" id="m-taux" class="form-control"
+               value="${m?.taux_horaire || ''}" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Heures/semaine</label>
+        <input type="number" id="m-hsem" class="form-control"
+               value="${m?.heures_semaine || 35}" min="1" max="60">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Début de mission</label>
+        <input type="date" id="m-debut" class="form-control" value="${m?.date_debut || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fin prévue</label>
+        <input type="date" id="m-fin" class="form-control" value="${m?.date_fin || ''}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Couleur</label>
+      <div class="color-picker">${swatches}</div>
+      <input type="hidden" id="m-color" value="${m?.couleur || MISSION_COLORS[0]}">
+    </div>
+
+    <button class="btn btn-primary" onclick="saveMission('${missionId || ''}')">
+      ${m ? '✓ Mettre à jour' : '+ Ajouter la mission'}
+    </button>
+    ${m ? `<button class="btn btn-danger mt-8" onclick="deleteMission('${missionId}');closeModal()">🗑 Supprimer</button>` : ''}
+  `;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function pickColor(c) {
+  document.getElementById('m-color').value = c;
+  document.querySelectorAll('.color-swatch').forEach(el =>
+    el.classList.toggle('active', el.dataset.c === c)
+  );
+}
+
+function saveMission(existingId) {
+  const nom = (document.getElementById('m-nom')?.value || '').trim();
+  if (!nom) { alert('Veuillez saisir un nom de mission.'); return; }
+
+  const mission = {
+    id:            existingId || uid(),
+    nom,
+    adresse:       document.getElementById('m-adresse')?.value || '',
+    contact:       document.getElementById('m-contact')?.value || '',
+    taux_horaire:  parseFloat(document.getElementById('m-taux')?.value) || 0,
+    heures_semaine: parseFloat(document.getElementById('m-hsem')?.value) || 35,
+    date_debut:    document.getElementById('m-debut')?.value || '',
+    date_fin:      document.getElementById('m-fin')?.value || '',
+    couleur:       document.getElementById('m-color')?.value || MISSION_COLORS[0],
+  };
+
+  if (existingId) {
+    const idx = S.data.missions.findIndex(m => m.id === existingId);
+    if (idx >= 0) S.data.missions[idx] = mission;
+    else S.data.missions.push(mission);
+  } else {
+    S.data.missions.push(mission);
+  }
+
+  scheduleSave();
+  renderAll();
+  closeModal();
+}
+
+function deleteMission(id) {
+  if (!confirm('Supprimer cette mission ?\nLes entrées liées seront conservées.')) return;
+  S.data.missions = S.data.missions.filter(m => m.id !== id);
+  scheduleSave();
+  renderAll();
+}
+
+// ================================================================
+// MODAL — UTILITAIRES
+// ================================================================
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+function closeModalOverlay(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ================================================================
+// EXPORT CSV & JSON
+// ================================================================
+function exportCSV(type, param) {
+  let rows = [], filename = '';
+
+  if (type === 'week') {
+    const monday = new Date(param + 'T00:00:00');
+    const wd     = calcWeek(monday);
+    filename     = 'releve-semaine-' + param + '.csv';
+    rows.push(['Date','Jour','Arrivée','Départ','Heures','Pause (min)','Pause payée','Mission','Taux €/h','Brut €','Type jour','Repas','KM','Notes']);
+    wd.forEach(d => d.entries.forEach(e => {
+      const h   = calcHeures(e);
+      const brut = h * (parseFloat(e.taux_horaire) || 0);
+      const jour = new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long' });
+      rows.push([e.date, jour, e.heure_arrivee||'', e.heure_depart||'',
+        h.toFixed(2), e.pause_minutes||0, e.pause_payee ? 'Oui' : 'Non',
+        getMissionName(e.mission_id), e.taux_horaire||0, brut.toFixed(2),
+        e.type_jour||'normal', e.indemnite_repas ? 'Oui' : 'Non',
+        e.km||0, '"' + (e.notes||'').replace(/"/g,'""') + '"']);
+    }));
+
+  } else if (type === 'month') {
+    const [y, m] = param.split('-').map(Number);
+    filename     = 'releve-mois-' + param + '.csv';
+    rows.push(['Date','Arrivée','Départ','Heures','Pause (min)','Mission','Taux €/h','Brut €','Type','Repas','KM','Notes']);
+    S.data.entrees
+      .filter(e => {
+        const d = new Date(e.date + 'T00:00:00');
+        return d.getFullYear() === y && d.getMonth() === m - 1;
+      })
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .forEach(e => {
+        const h   = calcHeures(e);
+        const brut = h * (parseFloat(e.taux_horaire) || 0);
+        rows.push([e.date, e.heure_arrivee||'', e.heure_depart||'',
+          h.toFixed(2), e.pause_minutes||0,
+          getMissionName(e.mission_id), e.taux_horaire||0, brut.toFixed(2),
+          e.type_jour||'normal', e.indemnite_repas ? 'Oui' : 'Non',
+          e.km||0, '"' + (e.notes||'').replace(/"/g,'""') + '"']);
+      });
+  }
+
+  const csv = rows.map(r => r.join(';')).join('\n');
+  download(filename, '﻿' + csv, 'text/csv;charset=utf-8');
+}
+
+function exportJSON() {
+  download('pointeuse-backup-' + todayStr() + '.json',
+    JSON.stringify(S.data, null, 2), 'application/json');
+}
+
+function download(filename, content, mime) {
+  const a = document.createElement('a');
+  a.href     = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ================================================================
+// PRÉREMPLIR LE CLIENT ID (configuré en dur)
+// ================================================================
+(function() {
+  const DEFAULT_CLIENT_ID = '970308024222-4707lt088miaus1ildk1lmt6i74vsftc.apps.googleusercontent.com';
+  if (!localStorage.getItem(LS_CLIENT_ID)) {
+    localStorage.setItem(LS_CLIENT_ID, DEFAULT_CLIENT_ID);
+    S.clientId = DEFAULT_CLIENT_ID;
+  }
+})();
+</script>
+</body>
+</html>
