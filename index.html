@@ -606,11 +606,12 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
 // ================================================================
 // CONSTANTES
 // ================================================================
-const DRIVE_FILE_NAME  = 'pointeuse-data.json';
-const DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file';
+const SHEET_NAME       = 'Pointeuse Intérim';
+const DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets';
+const FOLDER_PATH      = ['sauvegarde', 'pointeuse', 'heure'];
 const LS_CLIENT_ID     = 'pte_client_id';
 const LS_DATA          = 'pte_data';
-const LS_FILE_ID       = 'pte_drive_file_id';
+const LS_SHEET_ID      = 'pte_sheet_id';
 const LS_PENDING       = 'pte_pending_save';
 const SAVE_DEBOUNCE_MS = 2500;
 
@@ -626,7 +627,7 @@ const S = {
   clientId:        localStorage.getItem(LS_CLIENT_ID) || '',
   accessToken:     null,
   tokenExpiry:     0,
-  driveFileId:     localStorage.getItem(LS_FILE_ID) || null,
+  sheetId:         localStorage.getItem(LS_SHEET_ID) || null,
   data:            null,
   saveTimer:       null,
   weekOffset:      0,   // 0 = semaine courante
@@ -770,87 +771,156 @@ function tokenValid() {
 }
 
 // ================================================================
-// GOOGLE DRIVE API — fonctions bas niveau
+// GOOGLE SHEETS / DRIVE API — fonctions bas niveau
 // ================================================================
 
-/**
- * Requête générique vers l'API Drive avec le Bearer token.
- */
-async function driveReq(method, url, body, contentType) {
+async function apiReq(method, url, body) {
   const headers = { 'Authorization': 'Bearer ' + S.accessToken };
   const opts = { method, headers };
   if (body !== undefined && body !== null) {
-    headers['Content-Type'] = contentType || 'application/json';
-    opts.body = (typeof body === 'string') ? body : JSON.stringify(body);
+    headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
   }
   const res = await fetch(url, opts);
   if (!res.ok) {
     const txt = await res.text().catch(() => res.status);
-    throw new Error('Drive ' + res.status + ': ' + txt);
+    throw new Error('API ' + res.status + ': ' + txt);
   }
   const ct = res.headers.get('content-type') || '';
   return ct.includes('json') ? res.json() : res.text();
 }
 
-/** Cherche le fichier pointeuse sur Drive (scope drive.file = seuls les fichiers créés par l'app) */
-async function driveFindFile() {
-  const q = encodeURIComponent(`name='${DRIVE_FILE_NAME}' and trashed=false`);
-  const r = await driveReq('GET',
-    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&spaces=drive`
+/** Cherche ou crée un dossier Drive par nom sous un parent donné */
+async function findOrCreateFolder(name, parentId) {
+  const q = encodeURIComponent(
+    `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`
   );
-  return r.files?.length ? r.files[0] : null;
+  const r = await apiReq('GET',
+    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&spaces=drive`
+  );
+  if (r.files?.length) return r.files[0].id;
+  const created = await apiReq('POST', 'https://www.googleapis.com/drive/v3/files', {
+    name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId],
+  });
+  return created.id;
 }
 
-/** Crée le fichier JSON sur Drive avec un upload multipart */
-async function driveCreateFile(data) {
-  const meta    = JSON.stringify({ name: DRIVE_FILE_NAME, mimeType: 'application/json' });
-  const content = JSON.stringify(data, null, 2);
-  const bnd     = 'BOUNDARY_POINTEUSE_' + Date.now();
-  const body    =
-    `--${bnd}\r\nContent-Type: application/json\r\n\r\n${meta}\r\n` +
-    `--${bnd}\r\nContent-Type: application/json\r\n\r\n${content}\r\n` +
-    `--${bnd}--`;
+/** Navigue et crée si besoin sauvegarde/pointeuse/heure, retourne l'id du dernier dossier */
+async function getOrCreateFolderPath() {
+  let parentId = 'root';
+  for (const name of FOLDER_PATH) {
+    parentId = await findOrCreateFolder(name, parentId);
+  }
+  return parentId;
+}
 
-  const res = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+/** Cherche le Google Sheet dans le dossier cible */
+async function findSheet(folderId) {
+  const q = encodeURIComponent(
+    `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and '${folderId}' in parents and trashed=false`
+  );
+  const r = await apiReq('GET',
+    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&spaces=drive`
+  );
+  return r.files?.length ? r.files[0].id : null;
+}
+
+/** Crée le Google Sheet avec 3 feuilles et le déplace dans le bon dossier */
+async function createSheet(folderId) {
+  const ss = await apiReq('POST', 'https://sheets.googleapis.com/v4/spreadsheets', {
+    properties: { title: SHEET_NAME },
+    sheets: [
+      { properties: { title: 'Heures' } },
+      { properties: { title: 'Missions' } },
+      { properties: { title: 'Parametres' } },
+    ],
+  });
+  await apiReq('PATCH',
+    `https://www.googleapis.com/drive/v3/files/${ss.spreadsheetId}?addParents=${folderId}&removeParents=root&fields=id`,
+    null
+  );
+  return ss.spreadsheetId;
+}
+
+/** Écrit toutes les données dans les 3 feuilles */
+async function writeDataToSheets(sheetId, data) {
+  const heuresH = ['id','date','heure_arrivee','heure_depart','heures_directes','pause_minutes','pause_payee','mission_id','taux_horaire','type_jour','indemnite_repas','km','notes'];
+  const heuresRows = (data.entrees || []).map(e => [
+    e.id||'', e.date||'', e.heure_arrivee||'', e.heure_depart||'',
+    e.heures_directes??'', e.pause_minutes||0, e.pause_payee?'true':'false',
+    e.mission_id||'', e.taux_horaire||0, e.type_jour||'normal',
+    e.indemnite_repas?'true':'false', e.km||0, e.notes||''
+  ]);
+
+  const missionsH = ['id','nom','adresse','contact','taux_horaire','heures_semaine','date_debut','date_fin','couleur'];
+  const missionsRows = (data.missions || []).map(m => [
+    m.id||'', m.nom||'', m.adresse||'', m.contact||'',
+    m.taux_horaire||0, m.heures_semaine||35, m.date_debut||'', m.date_fin||'', m.couleur||''
+  ]);
+
+  const paramsH = ['cle','valeur'];
+  const paramsRows = Object.entries(data.settings || {}).map(([k, v]) => [k, String(v)]);
+
+  await apiReq('POST',
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchClear`,
+    { ranges: ['Heures', 'Missions', 'Parametres'] }
+  );
+  await apiReq('POST',
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`,
     {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + S.accessToken,
-        'Content-Type': `multipart/related; boundary="${bnd}"`,
-      },
-      body,
+      valueInputOption: 'USER_ENTERED',
+      data: [
+        { range: 'Heures!A1',     values: [heuresH,   ...heuresRows]   },
+        { range: 'Missions!A1',   values: [missionsH, ...missionsRows] },
+        { range: 'Parametres!A1', values: [paramsH,   ...paramsRows]   },
+      ]
     }
   );
-  if (!res.ok) throw new Error('Création fichier Drive échouée : ' + res.status);
-  return res.json();
 }
 
-/** Met à jour le contenu du fichier Drive (media upload simple) */
-async function driveUpdateFile(fileId, data) {
-  const res = await fetch(
-    `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
-    {
-      method: 'PATCH',
-      headers: {
-        'Authorization': 'Bearer ' + S.accessToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data, null, 2),
+/** Lit les 3 feuilles et reconstruit l'objet data */
+async function readDataFromSheets(sheetId) {
+  const r = await apiReq('GET',
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?ranges=Heures&ranges=Missions&ranges=Parametres`
+  );
+  const [heuresVals, missionsVals, paramsVals] = r.valueRanges.map(vr => vr.values || []);
+
+  const heuresH = heuresVals[0] || [];
+  const entrees = heuresVals.slice(1)
+    .filter(row => row.length > 0 && row[0])
+    .map(row => {
+      const e = {};
+      heuresH.forEach((h, i) => { e[h] = row[i] ?? ''; });
+      e.pause_minutes    = parseInt(e.pause_minutes, 10)  || 0;
+      e.pause_payee      = e.pause_payee      === 'true';
+      e.taux_horaire     = parseFloat(e.taux_horaire)     || 0;
+      e.indemnite_repas  = e.indemnite_repas  === 'true';
+      e.km               = parseFloat(e.km)               || 0;
+      e.heures_directes  = e.heures_directes !== '' ? (parseFloat(e.heures_directes) || null) : null;
+      return e;
+    });
+
+  const missionsH = missionsVals[0] || [];
+  const missions = missionsVals.slice(1)
+    .filter(row => row.length > 0 && row[0])
+    .map(row => {
+      const m = {};
+      missionsH.forEach((h, i) => { m[h] = row[i] ?? ''; });
+      m.taux_horaire   = parseFloat(m.taux_horaire)   || 0;
+      m.heures_semaine = parseFloat(m.heures_semaine) || 35;
+      return m;
+    });
+
+  const defSettings = defaultData().settings;
+  const settings = { ...defSettings };
+  paramsVals.slice(1).forEach(row => {
+    const k = row[0]; const v = row[1] ?? '';
+    if (k && k in defSettings) {
+      settings[k] = typeof defSettings[k] === 'number' ? (parseFloat(v) || defSettings[k]) : v;
     }
-  );
-  if (!res.ok) throw new Error('Mise à jour Drive échouée : ' + res.status);
-  return res.json();
-}
+  });
 
-/** Lit le contenu JSON du fichier Drive */
-async function driveReadFile(fileId) {
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-    { headers: { 'Authorization': 'Bearer ' + S.accessToken } }
-  );
-  if (!res.ok) throw new Error('Lecture Drive échouée : ' + res.status);
-  return res.json();
+  return { version: 2, settings, missions, entrees };
 }
 
 // ================================================================
@@ -860,35 +930,34 @@ async function driveReadFile(fileId) {
 async function loadData() {
   setSyncStatus('syncing', '⏳ Chargement…');
   try {
-    // 1. Si on a déjà un fileId mémorisé, on essaie de lire directement
-    if (S.driveFileId) {
+    // 1. Si on a déjà un sheetId mémorisé, on essaie de lire directement
+    if (S.sheetId) {
       try {
-        S.data = await driveReadFile(S.driveFileId);
+        S.data = await readDataFromSheets(S.sheetId);
       } catch (_) {
-        // Fichier supprimé ou inaccessible → on repart de zéro
-        S.driveFileId = null;
-        localStorage.removeItem(LS_FILE_ID);
+        S.sheetId = null;
+        localStorage.removeItem(LS_SHEET_ID);
       }
     }
 
-    // 2. Si pas de fileId (ou lecture échouée), on cherche sur Drive
-    if (!S.driveFileId) {
-      const found = await driveFindFile();
+    // 2. Si pas de sheetId (ou lecture échouée), on cherche/crée dans sauvegarde/pointeuse/heure
+    if (!S.sheetId) {
+      const folderId = await getOrCreateFolderPath();
+      const found = await findSheet(folderId);
       if (found) {
-        S.driveFileId = found.id;
-        localStorage.setItem(LS_FILE_ID, found.id);
-        S.data = await driveReadFile(found.id);
+        S.sheetId = found;
+        localStorage.setItem(LS_SHEET_ID, found);
+        S.data = await readDataFromSheets(found);
       } else {
-        // Premier lancement : on récupère le cache local s'il y en a un
         const local = loadLocal();
-        S.data = local || defaultData();
-        const created = await driveCreateFile(S.data);
-        S.driveFileId = created.id;
-        localStorage.setItem(LS_FILE_ID, created.id);
+        S.data = local ? migrateData(local) : defaultData();
+        const id = await createSheet(folderId);
+        S.sheetId = id;
+        localStorage.setItem(LS_SHEET_ID, id);
+        await writeDataToSheets(id, S.data);
       }
     }
 
-    // Compatibilité avec ancienne version de données
     S.data = migrateData(S.data);
     saveLocal(S.data);
     localStorage.removeItem(LS_PENDING);
@@ -896,7 +965,6 @@ async function loadData() {
 
   } catch (err) {
     console.error('loadData error', err);
-    // Fallback sur cache local
     const local = loadLocal();
     if (local) {
       S.data = migrateData(local);
@@ -931,11 +999,11 @@ function scheduleSave() {
 }
 
 async function saveToDrive() {
-  if (!S.driveFileId) { setSyncStatus('error', '⚠ Pas de fichier'); return; }
-  if (!tokenValid())  { setSyncStatus('error', '⚠ Token expiré'); return; }
+  if (!S.sheetId)    { setSyncStatus('error', '⚠ Pas de feuille'); return; }
+  if (!tokenValid()) { setSyncStatus('error', '⚠ Token expiré');   return; }
   setSyncStatus('syncing', '⏳ Sauvegarde…');
   try {
-    await driveUpdateFile(S.driveFileId, S.data);
+    await writeDataToSheets(S.sheetId, S.data);
     localStorage.removeItem(LS_PENDING);
     setSyncStatus('synced', '✓ Synchronisé');
   } catch (err) {
@@ -1703,10 +1771,14 @@ function renderReglages() {
     <button class="btn btn-primary" onclick="saveReglages()">✓ Sauvegarder</button>
 
     <div class="card mt-12">
-      <div class="card-title">Google Drive</div>
+      <div class="card-title">Google Sheets</div>
       <div class="summary-row" style="font-size:0.85rem;padding:4px 0">
-        <span class="lbl">Fichier</span>
-        <span style="font-family:monospace;font-size:0.78rem">${DRIVE_FILE_NAME}</span>
+        <span class="lbl">Feuille</span>
+        <span style="font-family:monospace;font-size:0.78rem">${SHEET_NAME}</span>
+      </div>
+      <div class="summary-row" style="font-size:0.85rem;padding:4px 0">
+        <span class="lbl">Dossier</span>
+        <span style="font-family:monospace;font-size:0.78rem">sauvegarde/pointeuse/heure</span>
       </div>
       <div class="summary-row" style="font-size:0.85rem;padding:4px 0">
         <span class="lbl">Statut</span>
