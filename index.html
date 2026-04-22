@@ -1329,6 +1329,7 @@ function renderEntriesList(entries) {
           ${m ? `<div class="entry-mission" style="color:${col}">${m.nom}</div>` : ''}
         </div>
         <div class="entry-actions">
+          <button class="icon-btn" onclick="openCopyModal('${e.id}')" title="Copier vers une autre date">⎘</button>
           <button class="icon-btn" onclick="editEntry('${e.id}')" title="Modifier">✏</button>
           <button class="icon-btn" onclick="deleteEntry('${e.id}')" title="Supprimer">🗑</button>
         </div>
@@ -1395,6 +1396,47 @@ function deleteEntry(id) {
   if (S.editingEntryId === id) S.editingEntryId = null;
   scheduleSave();
   renderAll();
+}
+
+function openCopyModal(id) {
+  const src = S.data.entrees.find(e => e.id === id);
+  if (!src) return;
+  const m = getMission(src.mission_id);
+  const h = calcHeures(src);
+  // Proposer le jour suivant par défaut
+  const nextDay = new Date(src.date + 'T00:00:00');
+  nextDay.setDate(nextDay.getDate() + 1);
+  const defaultDate = dateStr(nextDay);
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-drag-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">⎘ Copier cette entrée</span>
+      <button class="icon-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div style="padding:4px 0 14px;color:var(--muted);font-size:0.88rem">
+      ${fmtDate(src.date)} · ${fmtH(h)}${m ? ' · ' + m.nom : ''}
+    </div>
+    <div class="form-group">
+      <label class="form-label">Copier vers la date</label>
+      <input type="date" id="copy-date" class="form-control" value="${defaultDate}">
+    </div>
+    <div class="btn-row mt-12">
+      <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmCopy('${id}')">⎘ Copier</button>
+    </div>
+  `;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function confirmCopy(id) {
+  const src = S.data.entrees.find(e => e.id === id);
+  const newDate = document.getElementById('copy-date')?.value;
+  if (!src || !newDate) return;
+  S.data.entrees.push({ ...src, id: uid(), date: newDate });
+  scheduleSave();
+  renderAll();
+  closeModal();
 }
 
 function openDateEntry(ds) {
