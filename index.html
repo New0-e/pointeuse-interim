@@ -1385,9 +1385,12 @@ function cancelEdit() {
 }
 
 function editEntry(id) {
+  closeModal();
   S.editingEntryId = id;
   switchTab('saisie');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(() => {
+    document.querySelector('#screen-main main')?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 60);
 }
 
 function deleteEntry(id) {
@@ -1445,8 +1448,28 @@ function openDateEntry(ds) {
   setTimeout(() => {
     const di = document.getElementById('e-date');
     if (di) { di.value = ds; di.focus(); }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.querySelector('#screen-main main')?.scrollTo({ top: 0, behavior: 'smooth' });
   }, 60);
+}
+
+function openDayModal(ds) {
+  const entries = S.data.entrees.filter(e => e.date === ds);
+  if (!entries.length) { openDateEntry(ds); return; }
+
+  const label = new Date(ds + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  const totalH = entries.reduce((s, e) => s + calcHeures(e), 0);
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-drag-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" style="text-transform:capitalize">${label}</span>
+      <button class="icon-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div style="padding:2px 0 10px;color:var(--muted);font-size:0.85rem">Total : ${fmtH(totalH)}</div>
+    ${renderEntriesList(entries)}
+    <button class="btn btn-secondary mt-12" style="width:100%" onclick="closeModal();openDateEntry('${ds}')">+ Ajouter une entrée ce jour</button>
+  `;
+  document.getElementById('modal-overlay').classList.remove('hidden');
 }
 
 // ================================================================
@@ -1623,7 +1646,7 @@ function renderMois() {
     else if (h > 0) cls += ' worked-partial';
 
     cells += `
-      <div class="${cls}" onclick="openDateEntry('${ds}')" title="${h > 0 ? fmtH(h) : 'Ajouter une entrée'}">
+      <div class="${cls}" onclick="openDayModal('${ds}')" title="${h > 0 ? fmtH(h) : 'Ajouter une entrée'}">
         <span class="day-num">${day}</span>
         ${h > 0 ? `<span class="day-hours">${fmtH(h)}</span>` : ''}
       </div>`;
