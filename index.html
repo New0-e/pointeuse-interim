@@ -1044,7 +1044,7 @@ function setSyncStatus(cls, txt) {
 // ================================================================
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
-function todayStr() { return new Date().toISOString().slice(0, 10); }
+function todayStr() { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; }
 
 function fmtDate(s) {
   if (!s) return '';
@@ -1077,7 +1077,7 @@ function getMonday(date) {
   return d;
 }
 
-function dateStr(d) { return d.toISOString().slice(0, 10); }
+function dateStr(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
 function getMission(id) { return S.data.missions.find(m => m.id === id) || null; }
 function getMissionName(id) { return getMission(id)?.nom || (id ? '(supprimée)' : '–'); }
