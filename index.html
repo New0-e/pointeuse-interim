@@ -929,6 +929,19 @@ async function readDataFromSheets(sheetId) {
 async function loadData() {
   setSyncStatus('syncing', '⏳ Chargement…');
   try {
+    // Si des modifications locales n'ont pas encore été envoyées (ex: saveToDrive échoué),
+    // on les pousse d'abord pour ne pas les écraser en lisant depuis Sheets.
+    const hasPending = !!localStorage.getItem(LS_PENDING);
+    if (hasPending && S.sheetId) {
+      const local = loadLocal();
+      if (local) {
+        try {
+          await writeDataToSheets(S.sheetId, migrateData(local));
+          localStorage.removeItem(LS_PENDING);
+        } catch (_) { /* échec silencieux, on continue avec la lecture normale */ }
+      }
+    }
+
     // 1. Si on a déjà un sheetId mémorisé, on essaie de lire directement
     if (S.sheetId) {
       try {
